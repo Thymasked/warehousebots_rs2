@@ -24,7 +24,7 @@
 
 import rospy
 import actionlib
-from geometry_msgs.msg import Pose, Point, Quaternion 
+from geometry_msgs.msg import Pose, Point, Quaternion, PoseStamped
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal 
 from tf.transformations import quaternion_from_euler
 import numpy as np
@@ -42,11 +42,6 @@ class MultiNavGoals:
         self.move_base.wait_for_server()
         rospy.loginfo("Connected to move_base server")
 
-        # Subscribe to robot's odometry (/odom)
-        self.current_position = None
-        self.prev_position = None
-        self.position_sub = rospy.Subscriber('/odom', Odometry, self.update_position)
-
         # Define list of goals (x, y, theta in degrees) --> Modify this to set goals
         self.goals = [
             (0.5, 2.0, 0), # Goal 2
@@ -55,8 +50,16 @@ class MultiNavGoals:
         ]
 
         # Initialise variables for total distance and time
+        self.current_x = 0.0
+        self.current_y = 0.0
+        self.prev_x = 0.0
+        self.prev_y = 0.0
+
         self.total_distance = 0.0
         self.total_time = 0.0
+
+        # Subscribe to odometry topic
+        rospy.Subscriber('/odom', Odometry, self.odomCallback)
 
         # Loop through the list of goals
         for goal in self.goals:
@@ -68,10 +71,23 @@ class MultiNavGoals:
         rospy.loginfo(f"Total Time Taken: {self.total_time} seconds")
         rospy.loginfo("All goals processed. Shutting Down.")
 
-    def update_position(self, msg):
-        # Update the robot's current position from Odometry
-        if self.current_position is None:
-            self.current_position = (msg.pose.pose.position.x, msg.pose.pose.position.y)
+    # Odometry callback to update the robot's position
+    def odomCallback(self, msg):
+        # Get current position of from odometry
+        self.current_x = msg.pose.pose.position.x
+        self.current_y = msg.pose.pose.position.y
+
+        # Calculate the distance travelled from the previous position
+        dx = self.current_x - self.prev_x
+        dy = self.current_y - self.prev_y
+        self.total_distance += np.sqrt(dx**2 + dy**2) # Euclidean distance
+
+        # Update previous position
+        self.prev_x = self.current_x
+        self.prev_y = self.current_y
+
+        # Log the distance traveled
+        rospy.loginfo("Total distance traveled: %.2f meters", self.total_distance)
 
     def pubGoals(self, x, y, theta):
         # Sends a goal to move_base and wait for result
@@ -105,23 +121,19 @@ class MultiNavGoals:
         state = self.move_base.get_state()
         if state == actionlib.GoalStatus.SUCCEEDED:
             rospy.loginfo("Goal reached!")
-            if self.prev_position is not None:
-                distance = self.calculate_dist(self.prev_position, (x,y))
-                rospy.loginfo(f"distance: {distance}")
-                self.total_distance += distance # Add the distance to total_distance
-                self.prev_position = (x,y)
-                rospy.loginfo(f"Time taken to reach goal: {goal_time} seconds")
+            rospy.loginfo(f"Time taken to reach goal: {goal_time} seconds")
             return True
         else:
             rospy.logwarn("Failed to reach goal!")
             return False
-        
-    def calculate_dist(self, prev_pos, current_pos):
-            # Euclidean distance between two positions
-            return np.sqrt((current_pos[0] - prev_pos[0])**2 + (current_pos[1] - prev_pos[1])**2)
+
+# Main Code to run class        
+def main():
+    try:
+        MultiNavGoals() # Create instance of MultiNavGoals class
+    except rospy.ROSInternalException:
+        rospy.loginfo("Navigation interrupted.")  
+
 
 if __name__ == '__main__':
-    try:
-        MultiNavGoals()
-    except rospy.ROSInternalException:
-        rospy.logininfo("Navigation interrupted.")
+    main()
