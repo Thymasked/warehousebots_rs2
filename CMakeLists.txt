@@ -29,3 +29,8 @@ target_link_libraries(WarehouseBots_RS2
   ${catkin_LIBRARIES} # ROS libraries
   ${OpenCV_LIBRARIES} # openCV libraries
 )
+
+catkin_install_python(PROGRAMS scripts/nav_goals.py
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+
+
