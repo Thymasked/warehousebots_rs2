@@ -98,12 +98,13 @@ class MultiNavGoals:
         # Set position
         goal.target_pose.pose.position = Point(x, y, 0.0)
 
-        # Convert θ (degrees) to quaternion
+        # Convert θ (degrees) to quaternion 
         q = quaternion_from_euler(0, 0, np.deg2rad(theta))
         goal.target_pose.pose.orientation = Quaternion(*q)
 
         # Send goal to move_base
         rospy.loginfo(f"Sending goal: x={x}, y={y}, θ={theta}°")
+        
         # Record the time before sending goal
         start_time = rospy.get_time()
         self.move_base.send_goal(goal)
@@ -114,6 +115,7 @@ class MultiNavGoals:
         # Time to reach goal
         end_time = rospy.get_time()
         goal_time = end_time - start_time
+
         # Sum of time recorded for each goal
         self.total_time += goal_time
 
