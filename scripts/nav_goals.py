@@ -20,18 +20,18 @@
 # export TURTLEBOT3_MODEL=waffle_pi
 # roslaunch turtlebot3_navigation turtlebot3_navigation.launch map_file:=$HOME/map.yaml
 # localise the robot
-# rosrun WarehouseBots_RS2 nav_goals.py
-
+# rosrun WarehouseBots_RS2 nav_goals.py or just play the python script
 
 import rospy
 import actionlib
-from geometry_msgs.msg import Pose, Point, Quaternion 
+from geometry_msgs.msg import Pose, Point, Quaternion, PoseStamped
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal 
 from tf.transformations import quaternion_from_euler
 import numpy as np
+from nav_msgs.msg import Odometry
 
 class MultiNavGoals:
-    def _init_(self): # Initialise everything
+    def __init__(self): # Initialise everything
         rospy.init_node('multi_nav_goals', anonymous=False)
 
         # Create action client for move_base
@@ -42,21 +42,52 @@ class MultiNavGoals:
         self.move_base.wait_for_server()
         rospy.loginfo("Connected to move_base server")
 
-        # Define list of goals (x, y, theta in degrees) --> Modify this to set goals
+        # Define list of goals (x, y, theta in degrees) --> Modify this to set goals (Ensure it is within map range)
         self.goals = [
-            (0.5, 1.0, 0), # Goal 1
-            (1.0, 2.0, 0), # Goal 2
-            (1.5, 0.5, 0), # Goal 3
-            (2.5, 1.5, 0), # Goal 4
+            (0.5, 2.0, 0), # Goal 1
+            (-0.5, -0.3, 0), # Goal 2
+            (2, -0.5, 360), # Goal 3
         ]
+
+        # Initialise variables for total distance and time
+        self.current_x = 0.0
+        self.current_y = 0.0
+        self.prev_x = 0.0
+        self.prev_y = 0.0
+
+        self.total_distance = 0.0
+        self.total_time = 0.0
+
+        # Subscribe to odometry topic
+        rospy.Subscriber('/odom', Odometry, self.odomCallback)
 
         # Loop through the list of goals
         for goal in self.goals:
-            if not self.goals(goal[0], goal[1], goal[2]):
+            if not self.pubGoals(goal[0], goal[1], goal[2]):
                 rospy.logwarn("Goal failed. Stopping navigation.")
                 break # Stop if a goal fails
 
+        rospy.loginfo(f"Total Distance Traveled: {self.total_distance} meters")
+        rospy.loginfo(f"Total Time Taken: {self.total_time} seconds")
         rospy.loginfo("All goals processed. Shutting Down.")
+
+    # Odometry callback to update the robot's position
+    def odomCallback(self, msg):
+        # Get current position of from odometry
+        self.current_x = msg.pose.pose.position.x
+        self.current_y = msg.pose.pose.position.y
+
+        # Calculate the distance travelled from the previous position
+        dx = self.current_x - self.prev_x
+        dy = self.current_y - self.prev_y
+        self.total_distance += np.sqrt(dx**2 + dy**2) # Euclidean distance
+
+        # Update previous position
+        self.prev_x = self.current_x
+        self.prev_y = self.current_y
+
+        # Log the distance traveled
+        rospy.loginfo("Total distance traveled: %.2f meters", self.total_distance)
 
     def pubGoals(self, x, y, theta):
         # Sends a goal to move_base and wait for result
@@ -73,19 +104,36 @@ class MultiNavGoals:
 
         # Send goal to move_base
         rospy.loginfo(f"Sending goal: x={x}, y={y}, θ={theta}°")
+        # Record the time before sending goal
+        start_time = rospy.get_time()
         self.move_base.send_goal(goal)
+
+        # Wait for result
+        self.move_base.wait_for_result()
+
+        # Time to reach goal
+        end_time = rospy.get_time()
+        goal_time = end_time - start_time
+        # Sum of time recorded for each goal
+        self.total_time += goal_time
 
          # Check if goal succeeded
         state = self.move_base.get_state()
         if state == actionlib.GoalStatus.SUCCEEDED:
             rospy.loginfo("Goal reached!")
+            rospy.loginfo(f"Time taken to reach goal: {goal_time} seconds")
             return True
         else:
             rospy.logwarn("Failed to reach goal!")
             return False
 
-if __name__ == '__main__':
+# Main Code to run class        
+def main():
     try:
-        MultiNavGoals()
+        MultiNavGoals() # Create instance of MultiNavGoals class
     except rospy.ROSInternalException:
-        rospy.logininfo("Navigation interrupted.")
+        rospy.loginfo("Navigation interrupted.")  
+
+
+if __name__ == '__main__':
+    main()
