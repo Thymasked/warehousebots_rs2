@@ -1,15 +1,16 @@
 <?xml version="1.0"?>
 <package format="2">
   <name>wbots_main</name>
-  <version>0.1.0</version>
-  <description>ROS 1 package to move a TurtleBot Waffle Pi towards a high-visibility vest using OpenCV.</description>
+  <version>0.0.0</version>
+  <description>ROS 1 package to control TurtleBot Waffle Pi.</description>
 
-  <maintainer email="your_email@example.com">Your Name</maintainer>
+  <maintainer email="your_email@example.com">masky</maintainer>
   <license>Apache-2.0</license>
 
   <!-- Dependencies -->
   <buildtool_depend>catkin</buildtool_depend>
   <build_depend>roscpp</build_depend>
+  <build_depend>rospy</build_depend>
   <build_depend>sensor_msgs</build_depend>
   <build_depend>geometry_msgs</build_depend>
   <build_depend>cv_bridge</build_depend>
@@ -17,7 +18,9 @@
   <build_export_depend>sensor_msgs</build_export_depend>
   <build_export_depend>geometry_msgs</build_export_depend>
   <build_export_depend>cv_bridge</build_export_depend>
+  
   <exec_depend>roscpp</exec_depend>
+  <exec_depend>rospy</exec_depend>
   <exec_depend>sensor_msgs</exec_depend>
   <exec_depend>geometry_msgs</exec_depend>
   <exec_depend>cv_bridge</exec_depend>

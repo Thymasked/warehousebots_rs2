@@ -22,10 +22,15 @@ include_directories(
 )
 
 # Add executable
-add_executable(WarehouseBots_RS2 src/wbots_main.cpp)
+add_executable(WarehouseBots_RS2 src/Archive/wbots_main.cpp)
 
 # Link libraries to the executable
 target_link_libraries(WarehouseBots_RS2
   ${catkin_LIBRARIES} # ROS libraries
   ${OpenCV_LIBRARIES} # openCV libraries
 )
+
+catkin_install_python(PROGRAMS scripts/nav_goals.py
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+
+
