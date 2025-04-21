@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+# WARNING: WORK ONLY ON ROS1
+
 # Time Synchronisation: ssh ubuntu@192.168.0.210 "sudo date --set='$(date +"%Y-%m-%d %H:%M:%S")'"
 
 # Coded by Daniel Nguyen - WarehouseBots - Robotic Studio 2
