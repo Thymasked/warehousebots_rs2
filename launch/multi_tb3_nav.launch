@@ -1,0 +1,66 @@
+<launch>
+  <!-- Global arguments -->
+  <arg name="map_file" default="$(find turtlebot3_navigation)/maps/map.yaml"/>
+  <arg name="model" default="$(env TURTLEBOT3_MODEL)" />
+  <arg name="set_lidar_frame_id" default="base_scan" />
+  <arg name="scan_topic" default="scan" />
+
+  <!-- Map Server (shared across all robots) -->
+  <node pkg="map_server" type="map_server" name="map_server"
+        args="$(arg map_file)" output="screen"/>
+
+  <!-- Robot 1: tb3_0 -->
+  <group ns="tb3_0">
+    <!-- AMCL -->
+    <node pkg="amcl" type="amcl" name="amcl" output="screen">
+      <param name="odom_frame_id" value="odom"/>
+      <param name="base_frame_id" value="base_footprint"/>
+      <param name="use_map_topic" value="true" />
+      <remap from="scan" to="scan"/>
+      <remap from="initialpose" to="initialpose"/>
+      <remap from="amcl_pose" to="amcl_pose"/>
+      <remap from="particlecloud" to="particlecloud"/>
+    </node>
+
+    <!-- move_base -->
+    <node pkg="move_base" type="move_base" name="move_base" output="screen">
+      <rosparam file="$(find turtlebot3_navigation)/multi_param/multi_param0/move_base_params.yaml" command="load" />
+      <rosparam file="$(find turtlebot3_navigation)/multi_param/multi_param0/global_costmap_params.yaml" command="load"/>
+      <rosparam file="$(find turtlebot3_navigation)/multi_param/multi_param0/local_costmap_params.yaml" command="load"/>
+      <rosparam file="$(find turtlebot3_navigation)/multi_param/multi_param0/dwa_local_planner_params_$(arg model).yaml" command="load"/>
+      <remap from="cmd_vel" to="cmd_vel"/>
+      <remap from="odom" to="odom"/>
+      <remap from="map" to="/map"/>
+    </node>
+  </group>
+
+  <!-- Robot 2: tb3_1 -->
+  <group ns="tb3_1">
+    <!-- AMCL -->
+    <node pkg="amcl" type="amcl" name="amcl" output="screen">
+      <param name="odom_frame_id" value="odom"/>
+      <param name="base_frame_id" value="base_footprint"/>
+      <param name="use_map_topic" value="true" />
+      <remap from="scan" to="scan"/>
+      <remap from="initialpose" to="initialpose"/>
+      <remap from="amcl_pose" to="amcl_pose"/>
+      <remap from="particlecloud" to="particlecloud"/>
+    </node>
+
+    <!-- move_base -->
+    <node pkg="move_base" type="move_base" name="move_base" output="screen">
+      <rosparam file="$(find turtlebot3_navigation)/multi_param/multi_param1/move_base_params.yaml" command="load"/>
+      <rosparam file="$(find turtlebot3_navigation)/multi_param/multi_param1/global_costmap_params.yaml" command="load"/>
+      <rosparam file="$(find turtlebot3_navigation)/multi_param/multi_param1/local_costmap_params.yaml" command="load"/>
+      <rosparam file="$(find turtlebot3_navigation)/multi_param/multi_param1/dwa_local_planner_params_$(arg model).yaml" command="load"/>
+      <remap from="cmd_vel" to="cmd_vel"/>
+      <remap from="odom" to="odom"/>
+      <remap from="map" to="/map"/>
+    </node>
+  </group>
+
+  <!-- RViz Viewer -->
+  <arg name="rviz_config" default="$(find turtlebot3_navigation)/rviz/multi_turtlebot3_navigation.rviz" />
+  <node pkg="rviz" type="rviz" name="rviz" args="-d $(arg rviz_config)" />
+
+</launch>

@@ -1,0 +1,4 @@
+<launch>
+<!-- Launch the navigation goals script -->
+    <node pkg="warehousebots_rs2" type="remote_pc_2.py" name="remote_pc_2" output="screen" />
+</launch>

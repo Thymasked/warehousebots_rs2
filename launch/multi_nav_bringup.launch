@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<launch>
+  <!-- Arguments -->
+  <arg name="model" default="waffle_pi"/>
+  <arg name="map_file" default="$(find turtlebot3_navigation)/maps/map.yaml"/> 
+  <param name="use_sim_time" value="true"/>
+
+  <!-- Map server -->
+  <node pkg="map_server" name="map_server" type="map_server" args="$(arg map_file)">
+    <param name="frame_id" value="/map"/>
+  </node>
+
+  <!-- Robot 1 -->
+  <group ns="tb3_0">
+    <include file="$(find turtlebot3_navigation)/launch/multi_0_turtlebot3_navigation.launch">
+      <arg name="model" value="$(arg model)" />
+      <arg name="map_file" value="$(arg map_file)" />
+    </include>
+  </group>
+
+  <!-- Robot 2 -->
+  <group ns="tb3_1">
+    <include file="$(find turtlebot3_navigation)/launch/multi_1_turtlebot3_navigation.launch">
+      <arg name="model" value="$(arg model)" />
+      <arg name="map_file" value="$(arg map_file)" />
+    </include>
+  </group>
+
+  <!-- RViz -->
+  <node pkg="rviz" type="rviz" name="rviz" required="true"
+      args="-d $(find turtlebot3_navigation)/rviz/multi_turtlebot3_navigation.rviz"/>
+</launch>
