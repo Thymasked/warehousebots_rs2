@@ -48,11 +48,10 @@ class MultiNavGoals:
         # Check the start pose of the turtlebot3 using 'rostopic echo /amcl_pose'
 
         self.goals = [
-            (2.2, -0.43, 360),
-            (2.3, 0.6, 270)]
+            (0.10, -1.34, 0)]
         
         self.goalReturn = [
-            (2.2, -0.4, 306) # Start Position
+            (0.98, -2.67, 360) # Start Position
         ]
 
 
@@ -79,7 +78,7 @@ class MultiNavGoals:
         rospy.sleep(10)
 
         # Return to the original position
-        if not self.pubGoals(self.goalReturn[0], self.goalReturn[1], self.goalReturn[2]):
+        if not self.pubGoals(self.goalReturn[0][0], self.goalReturn[0][1], self.goalReturn[0][2]):
             rospy.logwarn("Returning to start position failed.")
 
         rospy.loginfo(f"Total Distance Traveled: {self.total_distance} meters")
