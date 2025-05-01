@@ -74,7 +74,7 @@ class MultiNavGoals:
                 continue # Skip to the next goal if the current one fails
 
         # Wait for 10 seconds for other robot to finish before returning
-        rospy.loginfo("Waiting for 10 seconds before returning to start position...")
+        rospy.loginfo("Waiting for 5 seconds before returning to start position...")
         rospy.sleep(10)
 
         # Return to the original position
@@ -138,7 +138,7 @@ class MultiNavGoals:
         self.total_time += goal_time
 
         # Retry if goal failed
-        retries = 3  # number of retries for a failed goal
+        retries = 2  # number of retries for a failed goal
 
         # Check if goal succeeded
         state = self.move_base.get_state()
