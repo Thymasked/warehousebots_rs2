@@ -3,16 +3,8 @@
 # Time Synchronisation: ssh ubuntu@192.168.0.210 "sudo date --set='$(date +"%Y-%m-%d %H:%M:%S")'"
 
 # Coded by Daniel Nguyen - WarehouseBots - Robotic Studio 2
-# TEST 1: Consistent Goals
+# Multi-Robot Test for Robot 1
 # Structure incorporated from turtlebot3/turtlebot3_example/nodes/turtlebot3_point_key --> But use move_base topic instead of cmd_vel (including navigation stack to handle obstacle avoidance)
-
-#----------  Instructions to run code in simulation --------#
-# export TURTLEBOT3_MODEL=waffle_pi
-# roslaunch turtlebot3_gazebo turtlebot3_empty_world.launch 
-# export TURTLEBOT3_MODEL=waffle_pi
-# roslaunch turtlebot3_navigation turtlebot3_navigation.launch map_file:=$HOME/map.yaml
-# make the script executable: chmod +x nav_goals.py
-# rosrun WarehouseBots_RS2 nav_goals.py
 
 #----------- Real Robot Instructions --------#
 # roscore

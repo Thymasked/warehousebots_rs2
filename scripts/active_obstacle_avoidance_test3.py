@@ -1,20 +1,16 @@
-#!/usr/bin/env python
-
-# WARNING: WORK ONLY ON ROS1
+#!/usr/bin/env python3
 
 # Time Synchronisation: ssh ubuntu@192.168.0.210 "sudo date --set='$(date +"%Y-%m-%d %H:%M:%S")'"
 
 # Coded by Daniel Nguyen - WarehouseBots - Robotic Studio 2
-# TEST 1: Consistent Goals
+# Test 3: Active Obstacle Avoidance
 # Structure incorporated from turtlebot3/turtlebot3_example/nodes/turtlebot3_point_key --> But use move_base topic instead of cmd_vel (including navigation stack to handle obstacle avoidance)
 
-#----------  Instructions to run code in simulation --------#
-# export TURTLEBOT3_MODEL=waffle_pi
-# roslaunch turtlebot3_gazebo turtlebot3_empty_world.launch 
-# export TURTLEBOT3_MODEL=waffle_pi
-# roslaunch turtlebot3_navigation turtlebot3_navigation.launch map_file:=$HOME/map.yaml
-# make the script executable: chmod +x nav_goals.py
-# rosrun WarehouseBots_RS2 nav_goals.py
+# For better obstacle avoidance and smooth faster path replanning, edit:
+# Global Planner, DWA Local Planner, Costmap Settings and Recovery Behaviour
+# Increase planner_frequency, increase controller_frequency, decrease sim_time, adjust (lower to be more responsice to obstacles) 
+# path_distance_bias and goal_distance_bias, increase update_frequency and publish_frequency (10.0 and 5.0)
+# adjust recovery_attempts and clearing_radius (3 attempts and 1.0 radius)
 
 #----------- Real Robot Instructions --------#
 # roscore
@@ -34,9 +30,9 @@ from tf.transformations import quaternion_from_euler
 import numpy as np
 from nav_msgs.msg import Odometry
 
-class MultiNavGoals:
+class ActiveObsAvoidance:
     def __init__(self): # Initialise everything
-        rospy.init_node('multi_nav_goals', anonymous=False)
+        rospy.init_node('active_obs_avoidance', anonymous=False)
 
         # Create action client for move_base
         self.move_base = actionlib.SimpleActionClient("move_base", MoveBaseAction)
@@ -48,38 +44,13 @@ class MultiNavGoals:
 
         # Define list of goals (x, y, theta in degrees) --> Modify this to set goals (Ensure it is within map range)
         # Check the start pose of the turtlebot3 using 'rostopic echo /amcl_pose'
-        # Start pose for labtest4 is (x ,y ,theta) = (-0.65, -0.18, 0.0), Left side (-0.46, 0.91, 0.0)
-        #self.goals = [
-        #    (-0.65, -0.18, 0), # Goal 1
-        #    (-0.46, 0.91, 0), # Goal 2
-        #    (0.03, 1.15, 0) # Goal 3
-        #] 
 
-
-        # Demo Map 1 Goals - Start Position: (0.19, 0.15, 0) 
-        #self.goals = [
-        #    (2.2, -0.43, 360),
-        #    (2.3, 0.6, 270),
-        #    (0.06, -0.34, 0),
-        #    (2.2, -0.43, 360),
-        #    (0.19, 0.15, 0)
-        #]
-
-        # Demo Map 2 Goals - Start Position: (0.045, -0.10, 0) 
-#        self.goals = [
- #           (0.72, -0.38, 270), # First Goal
-  #          (0.65, 0.78, 0), # Second Goal
-   #         (1.73, 0.07, 0), # Third Goal
-    #        (2.6, -0.40, 360), # Fourth Goal
-     #       (2.5, 0.57, 360) # Fifth Goal
-
-        # Demo Map Goals - Start Position: (0.19, 0.15, 0) 
         self.goals = [
-            (2.2, -0.43, 360),
-            (2.3, 0.6, 270),
-            (0.06, -0.34, 0),
-            (2.2, -0.43, 360),
-            (0.19, 0.15, 0)]
+            (0.10, -1.34, 0)] # Goal Position
+        
+        self.goalReturn = [
+            (0.98, -2.67, 360) # Start Position
+        ]
 
 
         # Initialise variables for total distance and time
@@ -98,7 +69,15 @@ class MultiNavGoals:
         for goal in self.goals:
             if not self.pubGoals(goal[0], goal[1], goal[2]):
                 rospy.logwarn("Goal failed. Stopping navigation.")
-                break # Stop if a goal fails
+                continue # Skip to the next goal if the current one fails
+
+        # Wait for 10 seconds for other robot to finish before returning
+        rospy.loginfo("Waiting for 5 seconds before returning to start position...")
+        rospy.sleep(10)
+
+        # Return to the original position
+        if not self.pubGoals(self.goalReturn[0][0], self.goalReturn[0][1], self.goalReturn[0][2]):
+            rospy.logwarn("Returning to start position failed.")
 
         rospy.loginfo(f"Total Distance Traveled: {self.total_distance} meters")
         rospy.loginfo(f"Total Time Taken: {self.total_time} seconds")
@@ -143,7 +122,11 @@ class MultiNavGoals:
         self.move_base.send_goal(goal)
 
         # Wait for result
-        self.move_base.wait_for_result()
+        success = self.move_base.wait_for_result(rospy.Duration(60.0)) # Time out in seconds
+
+        if not success:
+            rospy.logwarn(f"Goal failed due to timeout or other issues.")
+            return False
 
         # Time to reach goal
         end_time = rospy.get_time()
@@ -152,20 +135,30 @@ class MultiNavGoals:
         # Sum of time recorded for each goal
         self.total_time += goal_time
 
-         # Check if goal succeeded
+        # Retry if goal failed
+        retries = 2  # number of retries for a failed goal
+
+        # Check if goal succeeded
         state = self.move_base.get_state()
+        while state != actionlib.GoalStatus.SUCCEEDED and retries > 0:
+            rospy.logwarn(f"Goal failed. Retrying... {retries} attempts left.")
+            self.move_base.send_goal(goal)
+            success = self.move_base.wait_for_result(rospy.Duration(60.0)) 
+            state = self.move_base.get_state()
+            retries -= 1 
+            
         if state == actionlib.GoalStatus.SUCCEEDED:
             rospy.loginfo("Goal reached!")
             rospy.loginfo(f"Time taken to reach goal: {goal_time} seconds")
             return True
         else:
-            rospy.logwarn("Failed to reach goal!")
+            rospy.logwarn("Failed to reach goal after multiple attempts.")
             return False
 
 # Main Code to run class        
 def main():
     try:
-        MultiNavGoals() # Create instance of MultiNavGoals class
+        ActiveObsAvoidance() # Create instance of MultiNavGoals class
     except rospy.ROSInternalException:
         rospy.loginfo("Navigation interrupted.")  
 
