@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 
+# Time Synchronisation: ssh ubuntu@192.168.0.210 "sudo date --set='$(date +"%Y-%m-%d %H:%M:%S")'"
+# Manual: sudo date -s "2025-05-06 15:08:50"
+
 # Coded by Daniel Nguyen - WarehouseBots - Robotic Studio 2
 # TEST 1: Consistent Goals matching optimal human path
 # Structure incorporated from turtlebot3/turtlebot3_example/nodes/turtlebot3_point_key --> But use move_base topic instead of cmd_vel (including navigation stack to handle obstacle avoidance)
@@ -33,8 +36,7 @@ import numpy as np
 from nav_msgs.msg import Odometry
 
 class MultiNavGoals:
-    def __init__(self, trial_num): # Initialise everything
-        rospy.init_node(f'nav_goals_test1_{trial_num}', anonymous=False)
+    def __init__(self): # Initialise everything
 
         # Create action client for move_base
         self.move_base = actionlib.SimpleActionClient("move_base", MoveBaseAction)
@@ -46,9 +48,9 @@ class MultiNavGoals:
 
         # Define list of goals (x, y, theta in degrees) --> Modify this to set goals (Ensure it is within map range)
         self.goals = [
-            (0.5, 2.0, 0), # Goal 1
-            (-0.5, -0.3, 0), # Goal 2
-            (2, -0.5, 360), # Goal 3
+            (-0.523, 0.578, 90), # Goal 1
+            (-1.28, 1.86, 360), # Goal 2
+            (-0.271, 2.05, 0.0), # Goal 3
         ]
 
         # Initialise variables for total distance and time
@@ -57,10 +59,12 @@ class MultiNavGoals:
         self.prev_x = 0.0
         self.prev_y = 0.0
 
-        self.trial_num = trial_num
+        #self.trial_num = trial_num
         self.total_distance = 0.0
         self.total_time = 0.0
         self.deviation = 0.0
+        self.start_tracking = False # Flag for starting the time when first goal is published
+
 
         # Subscribe to odometry topic
         rospy.Subscriber('/odom', Odometry, self.odomCallback)
@@ -81,15 +85,18 @@ class MultiNavGoals:
 
         # Return the robot back to starting pose
         rospy.loginfo("Returning back to starting position...")
-        home_success = self.pubGoals(0, 0, 0) # Edit this as starting pose
+        home_success = self.pubGoals(0.078, -0.638, 0.0) # Edit this as starting pose
         
         if home_success:
             rospy.loginfo("Returned to origin successfully.")
         else:
             rospy.loginfo("Failed to return to origin")
+        
 
     # Odometry callback to update the robot's position
     def odomCallback(self, msg):
+        if not self.start_tracking:
+            return
         # Get current position of from odometry
         self.current_x = msg.pose.pose.position.x
         self.current_y = msg.pose.pose.position.y
@@ -108,6 +115,7 @@ class MultiNavGoals:
 
     def pubGoals(self, x, y, theta):
         # Sends a goal to move_base and wait for result
+        self.start_tracking = True
         goal = MoveBaseGoal()
         goal.target_pose.header.frame_id = "map"  # Use 'map' frame for global navigation
         goal.target_pose.header.stamp = rospy.Time.now()
@@ -130,7 +138,7 @@ class MultiNavGoals:
             # Record the time before sending goal
             start_time = rospy.get_time()
             self.move_base.send_goal(goal)
-            self.move_base.wait_for_result(rospy.Duration(60.0)) 
+            self.move_base.wait_for_result() 
             end_time = rospy.get_time()
 
             state = self.move_base.get_state()      
@@ -168,6 +176,13 @@ class MultiNavGoals:
             total_optimal_distance += dist
         rospy.loginfo(f"Optimal (shortest) path length: {total_optimal_distance:.2f} meters")
         return total_optimal_distance
+    # Measuring tape distance between goals:
+    #goal 1 to 2 - 1.39m
+    #goal 2 to 3 - 1.52m
+    #goal 3 to 4 - 1.11m
+    #goal 4 to 1 - 2.66m 
+    #total length = 6.68m
+    #robot travel length = 8.74m | Time: 1 min recording
 
     # Refining the PARAMETERS ensures smaller deviations
     # goal_distance_bias (increase value for smoother trajectories and efficient movement in open spaces)
@@ -177,6 +192,8 @@ class MultiNavGoals:
 
 # Main Code to run class        
 def main():
+    rospy.init_node(f'nav_goals_test1', anonymous=False)
+
     # Initialise results file
     results_file = "nav_goal_test1_results.csv"
 
@@ -184,11 +201,21 @@ def main():
     if not os.path.exists(results_file):
         with open(results_file, mode='w') as f:
             writer = csv.writer(f)
-            writer.writerow(['Trial', 'Distance(m)', 'Time(s)', 'Path Deviation (%)'])
+            writer.writerow(['Distance(m)', 'Time(s)', 'Path Deviation (%)'])
 
     try:
-        # Loop for 5 trials
-        for trial in range(1,6):
+        rospy.loginfo(f"\n=== Trial 1 ===")
+        nav_test = MultiNavGoals() # Create instance of MultiNavGoals class
+        rospy.sleep(2) # Wait briefly before next run
+
+        # Save results to CSV
+        with open(results_file, mode='a') as f:
+            writer = csv.writer(f)
+            writer.writerow([f"{nav_test.total_distance:.2f}", f"{nav_test.total_time:.2f}", f"{nav_test.deviation:.2f}"])
+
+        """
+        # Loop for 1 trial
+        for trial in range(1,1):
             rospy.loginfo(f"\n=== Trial {trial} ===")
             nav_test = MultiNavGoals(trial) # Create instance of MultiNavGoals class
             rospy.sleep(2) # Wait briefly before next run
@@ -197,7 +224,7 @@ def main():
             with open(results_file, mode='a') as f:
                 writer = csv.writer(f)
                 writer.writerow([trial, f"{nav_test.total_distance:.2f}", f"{nav_test.total_time:.2f}", f"{nav_test.deviation:.2f}"])
-
+        """
     except rospy.ROSInternalException:
         rospy.loginfo("Navigation interrupted.")  
 

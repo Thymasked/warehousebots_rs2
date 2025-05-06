@@ -3,6 +3,7 @@
 # WARNING: WORK ONLY ON ROS1
 
 # Time Synchronisation: ssh ubuntu@192.168.0.210 "sudo date --set='$(date +"%Y-%m-%d %H:%M:%S")'"
+# Manual: sudo date -s "2025-05-06 15:08:50"
 
 # Coded by Daniel Nguyen - WarehouseBots - Robotic Studio 2
 # TEST 2: A* vs Dijkstra Path Planning
@@ -48,9 +49,9 @@ class PathOptimizationTest:
 
         # Define list of goals (x, y, theta in degrees) --> Modify this to set goals (Ensure it is within map range)
         self.goals = [
-            (0.5, 2.0, 0), # Goal 1
-            (-0.5, -0.3, 0), # Goal 2
-            (2, -0.5, 360), # Goal 3
+            (-0.523, 0.578, 90), # Goal 1
+            (-1.28, 1.86, 360), # Goal 2
+            (-0.271, 2.05, 360), # Goal 3
         ]
 
         # Initialise variables for total distance and time
@@ -82,7 +83,7 @@ class PathOptimizationTest:
 
         # Return the robot back to starting pose
         rospy.loginfo("Returning back to starting position...")
-        home_success = self.pubGoals(0, 0, 0) # Edit this as starting pose
+        home_success = self.pubGoals(0.078, -0.638, 0.0) # Edit this as starting pose
         
         if home_success:
             rospy.loginfo("Returned to origin successfully.")
