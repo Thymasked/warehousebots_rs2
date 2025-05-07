@@ -49,8 +49,8 @@ class MultiNavGoals:
         # Define list of goals (x, y, theta in degrees) --> Modify this to set goals (Ensure it is within map range)
         self.goals = [
             (-0.523, 0.578, 90), # Goal 1
-            (-1.28, 1.86, 360), # Goal 2
-            (-0.271, 2.05, 0.0), # Goal 3
+            (-1.28, 1.86, 0), # Goal 2
+            (-0.271, 2.05, 0), # Goal 3
         ]
 
         # Initialise variables for total distance and time
@@ -64,10 +64,14 @@ class MultiNavGoals:
         self.total_time = 0.0
         self.deviation = 0.0
         self.start_tracking = False # Flag for starting the time when first goal is published
+        self.start_time = 0.0
 
 
         # Subscribe to odometry topic
         rospy.Subscriber('/odom', Odometry, self.odomCallback)
+
+        # Start the time
+        self.start_time = rospy.get_time()
 
         # Loop through the list of goals
         for goal in self.goals:
@@ -75,28 +79,35 @@ class MultiNavGoals:
                 rospy.logwarn("Goal failed. Moving to next goal.")
                 continue # Skip to the next goal if the current one fails
 
-        rospy.loginfo(f"Total Distance Traveled: {self.total_distance} meters")
-        rospy.loginfo(f"Total Time Taken: {self.total_time} seconds")
-
-        rospy.loginfo("All goals processed. Shutting Down.")
-
-        # Call deviation calculator
-        self.deviation = self.calculate_deviation()
+        rospy.loginfo("All goals processed.")
 
         # Return the robot back to starting pose
         rospy.loginfo("Returning back to starting position...")
-        home_success = self.pubGoals(0.078, -0.638, 0.0) # Edit this as starting pose
+
+        home_success = self.pubGoals(0.078, -0.638, 0) # Edit this as starting pose
         
         if home_success:
             rospy.loginfo("Returned to origin successfully.")
         else:
             rospy.loginfo("Failed to return to origin")
+
+        self.end_time = rospy.get_time()
+        self.total_time = self.end_time - self.start_time
+        # Call deviation calculator
+        deviation_percentage = self.calculate_deviation()
+        #self.optimal_length = self.optimalPathLength()
+
+        rospy.loginfo(f"Total Distance Traveled: {self.total_distance} meters")
+        rospy.loginfo(f"Total Time Taken: {self.total_time} seconds")
+        #rospy.loginfo(f"Optimal Path Length: {self.optimal_length} meters")
+        rospy.loginfo(f"Optimal Path Deviation: {deviation_percentage} %")
         
 
     # Odometry callback to update the robot's position
     def odomCallback(self, msg):
         if not self.start_tracking:
             return
+        
         # Get current position of from odometry
         self.current_x = msg.pose.pose.position.x
         self.current_y = msg.pose.pose.position.y
@@ -136,20 +147,20 @@ class MultiNavGoals:
         # Loop to check if goal is unsuccessful and retries is more than 0
         while retries >= 0:
             # Record the time before sending goal
-            start_time = rospy.get_time()
+            #start_time = rospy.get_time()
             self.move_base.send_goal(goal)
             self.move_base.wait_for_result() 
-            end_time = rospy.get_time()
+            #end_time = rospy.get_time()
 
             state = self.move_base.get_state()      
             if state == actionlib.GoalStatus.SUCCEEDED:
                 # Time to reach goal
-                goal_time = end_time - start_time
+                #goal_time = end_time - start_time
                 # Sum of time recorded for each goal
-                self.total_time += goal_time
+                #self.total_time += goal_time
 
                 rospy.loginfo("Goal reached!")
-                rospy.loginfo(f"Time taken to reach goal: {goal_time:.2f} seconds")
+                #rospy.loginfo(f"Time taken to reach goal: {goal_time:.2f} seconds")
                 return True
             else:
                 rospy.logwarn(f"Failed to reach goal. Retrying... {retries} attempts left.")
@@ -160,12 +171,16 @@ class MultiNavGoals:
         
     # Calculate distance deviation
     def calculate_deviation(self):
+        if self.total_distance == 0.0:
+            rospy.logwarn("Total distance is 0. Cannot calculate deviation")
+            return 0.0
         #human_path_length = 0.64 # Measure in meters, update if needed
-        optimal_path_dist = self.optimalPathLength()
+        optimal_path_dist = 8.74 #self.optimalPathLength()
         self.deviation = ((self.total_distance - optimal_path_dist) / optimal_path_dist) * 100
         rospy.loginfo(f"Path deviation: {self.deviation:.2f}%")
         return self.deviation
     
+    """
     # May need to add a function for calculating optimal path length for all goals
     def optimalPathLength(self):
         total_optimal_distance = 0.0
@@ -176,6 +191,8 @@ class MultiNavGoals:
             total_optimal_distance += dist
         rospy.loginfo(f"Optimal (shortest) path length: {total_optimal_distance:.2f} meters")
         return total_optimal_distance
+    """
+    
     # Measuring tape distance between goals:
     #goal 1 to 2 - 1.39m
     #goal 2 to 3 - 1.52m
@@ -213,21 +230,10 @@ def main():
             writer = csv.writer(f)
             writer.writerow([f"{nav_test.total_distance:.2f}", f"{nav_test.total_time:.2f}", f"{nav_test.deviation:.2f}"])
 
-        """
-        # Loop for 1 trial
-        for trial in range(1,1):
-            rospy.loginfo(f"\n=== Trial {trial} ===")
-            nav_test = MultiNavGoals(trial) # Create instance of MultiNavGoals class
-            rospy.sleep(2) # Wait briefly before next run
-
-            # Save results to CSV
-            with open(results_file, mode='a') as f:
-                writer = csv.writer(f)
-                writer.writerow([trial, f"{nav_test.total_distance:.2f}", f"{nav_test.total_time:.2f}", f"{nav_test.deviation:.2f}"])
-        """
     except rospy.ROSInternalException:
         rospy.loginfo("Navigation interrupted.")  
 
 
 if __name__ == '__main__':
     main()
+    
