@@ -60,6 +60,10 @@ class MultiNavGoals:
         # Subscribe to odometry topic
         rospy.Subscriber('/odom', Odometry, self.odomCallback)
 
+        # Wait for 10 seconds for robot 1 to meet at center
+        rospy.loginfo("Waiting for Robot 1 to meet at center...")
+        rospy.sleep(10)
+
         # Loop through the list of goals
         for goal in self.goals:
             if not self.pubGoals(goal[0], goal[1], goal[2]):

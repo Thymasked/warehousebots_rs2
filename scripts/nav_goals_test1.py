@@ -46,12 +46,8 @@ class MultiNavGoals:
         self.move_base.wait_for_server()
         rospy.loginfo("Connected to move_base server")
 
-        # Define list of goals (x, y, theta in degrees) --> Modify this to set goals (Ensure it is within map range)
-        self.goals = [
-            (-0.523, 0.578, 90), # Goal 1
-            (-1.28, 1.86, 0), # Goal 2
-            (-0.271, 2.05, 0), # Goal 3
-        ]
+        # Subscribe to odometry topic
+        rospy.Subscriber('/odom', Odometry, self.odomCallback)
 
         # Initialise variables for total distance and time
         self.current_x = 0.0
@@ -66,9 +62,12 @@ class MultiNavGoals:
         self.start_tracking = False # Flag for starting the time when first goal is published
         self.start_time = 0.0
 
-
-        # Subscribe to odometry topic
-        rospy.Subscriber('/odom', Odometry, self.odomCallback)
+        # Define list of goals (x, y, theta in degrees) --> Modify this to set goals (Ensure it is within map range)
+        self.goals = [
+            (-0.523, 0.578, 90), # Goal 1
+            (-1.28, 1.86, 0), # Goal 2
+            (-0.271, 2.05, 0), # Goal 3
+        ]
 
         # Start the time
         self.start_time = rospy.get_time()
@@ -84,7 +83,7 @@ class MultiNavGoals:
         # Return the robot back to starting pose
         rospy.loginfo("Returning back to starting position...")
 
-        home_success = self.pubGoals(0.078, -0.638, 0) # Edit this as starting pose
+        home_success = self.pubGoals(0.078, -0.638, 180) # Edit this as starting pose
         
         if home_success:
             rospy.loginfo("Returned to origin successfully.")
