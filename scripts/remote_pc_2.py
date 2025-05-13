@@ -3,16 +3,8 @@
 # Time Synchronisation: ssh ubuntu@192.168.0.205 "sudo date --set='$(date +"%Y-%m-%d %H:%M:%S")'"
 
 # Coded by Daniel Nguyen - WarehouseBots - Robotic Studio 2
-# TEST 1: Consistent Goals
+# Multi-Robot Test for Robot 2
 # Structure incorporated from turtlebot3/turtlebot3_example/nodes/turtlebot3_point_key --> But use move_base topic instead of cmd_vel (including navigation stack to handle obstacle avoidance)
-
-#----------  Instructions to run code in simulation --------#
-# export TURTLEBOT3_MODEL=waffle_pi
-# roslaunch turtlebot3_gazebo turtlebot3_empty_world.launch 
-# export TURTLEBOT3_MODEL=waffle_pi
-# roslaunch turtlebot3_navigation turtlebot3_navigation.launch map_file:=$HOME/map.yaml
-# make the script executable: chmod +x nav_goals.py
-# rosrun WarehouseBots_RS2 nav_goals.py
 
 #----------- Real Robot Instructions --------#
 # roscore
@@ -66,6 +58,10 @@ class MultiNavGoals:
 
         # Subscribe to odometry topic
         rospy.Subscriber('/odom', Odometry, self.odomCallback)
+
+        # Wait for 10 seconds for robot 1 to meet at center
+        rospy.loginfo("Waiting for Robot 1 to meet at center...")
+        rospy.sleep(10)
 
         # Loop through the list of goals
         for goal in self.goals:
