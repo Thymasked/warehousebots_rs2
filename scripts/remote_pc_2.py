@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 # Time Synchronisation: ssh ubuntu@192.168.0.205 "sudo date --set='$(date +"%Y-%m-%d %H:%M:%S")'"
+# sudo date -s "2025-05-06 15:08:50"
 
 # Coded by Daniel Nguyen - WarehouseBots - Robotic Studio 2
 # Multi-Robot Test for Robot 2
@@ -40,10 +41,10 @@ class MultiNavGoals:
         # Check the start pose of the turtlebot3 using 'rostopic echo /amcl_pose'
 
         self.goals = [
-            (0.2, -1.24, 180)]
+            (0.1, -1.34, 0)]
         
         self.goalReturn = [
-            (-0.03, -0.03, 0) # Start Position
+            (-0.03, -0.03, 360) # Start Position
         ]
 
 
@@ -61,7 +62,7 @@ class MultiNavGoals:
 
         # Wait for 10 seconds for robot 1 to meet at center
         rospy.loginfo("Waiting for Robot 1 to meet at center...")
-        rospy.sleep(10)
+        #rospy.sleep(10)
 
         # Loop through the list of goals
         for goal in self.goals:
