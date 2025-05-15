@@ -67,19 +67,17 @@ class PathOptimizationTest:
         # Subscribe to odometry topic
         rospy.Subscriber('/odom', Odometry, self.odomCallback)
 
+        # Start the time
+        self.start_time = rospy.get_time()
+
         # Loop through the list of goals
         for goal in self.goals:
             if not self.pubGoals(goal[0], goal[1], goal[2]):
                 rospy.logwarn("Goal failed. Moving to next goal.")
                 continue # Skip to the next goal if the current one fails
 
-        rospy.loginfo(f"Total Distance Traveled: {self.total_distance} meters")
-        rospy.loginfo(f"Total Time Taken: {self.total_time} seconds")
-
-        rospy.loginfo("All goals processed. Shutting Down.")
-
         # Call deviation calculator
-        self.deviation = self.calculate_deviation()
+        #self.deviation = self.calculate_deviation()
 
         # Return the robot back to starting pose
         rospy.loginfo("Returning back to starting position...")
@@ -89,6 +87,17 @@ class PathOptimizationTest:
             rospy.loginfo("Returned to origin successfully.")
         else:
             rospy.loginfo("Failed to return to origin")
+
+        self.end_time = rospy.get_time()
+        self.total_time = self.end_time - self.start_time
+        # Call deviation calculator
+        deviation_percentage = self.calculate_deviation()
+
+        rospy.loginfo(f"Total Distance Traveled: {self.total_distance} meters")
+        rospy.loginfo(f"Total Time Taken: {self.total_time} seconds")
+        rospy.loginfo(f"Optimal Path Deviation: {deviation_percentage} %")
+
+        rospy.loginfo("All goals processed. Shutting Down.")
 
 
     # Odometry callback to update the robot's position
@@ -131,20 +140,20 @@ class PathOptimizationTest:
         # Loop to check if goal is unsuccessful and retries is more than 0
         while retries >= 0:
             # Record the time before sending goal
-            start_time = rospy.get_time()
+            #start_time = rospy.get_time()
             self.move_base.send_goal(goal)
             self.move_base.wait_for_result(rospy.Duration(60.0)) 
-            end_time = rospy.get_time()
+           # end_time = rospy.get_time()
 
             state = self.move_base.get_state()      
             if state == actionlib.GoalStatus.SUCCEEDED:
                 # Time to reach goal
-                goal_time = end_time - start_time
+                #goal_time = end_time - start_time
                 # Sum of time recorded for each goal
-                self.total_time += goal_time
+                #self.total_time += goal_time
 
                 rospy.loginfo("Goal reached!")
-                rospy.loginfo(f"Time taken to reach goal: {goal_time:.2f} seconds")
+                #rospy.loginfo(f"Time taken to reach goal: {goal_time:.2f} seconds")
                 return True
             else:
                 rospy.logwarn(f"Failed to reach goal. Retrying... {retries} attempts left.")
@@ -156,11 +165,11 @@ class PathOptimizationTest:
     # Calculate distance deviation
     def calculate_deviation(self):
         #human_path_length = 0.64 # Measure in meters, update if needed
-        optimal_path_dist = self.optimalPathLength()
+        optimal_path_dist = 6.68 #self.optimalPathLength()
         self.deviation = ((self.total_distance - optimal_path_dist) / optimal_path_dist) * 100
         rospy.loginfo(f"Path deviation: {self.deviation:.2f}%")
         return self.deviation
-    
+    """
     # May need to add a function for calculating optimal path length for all goals
     def optimalPathLength(self):
         total_optimal_distance = 0.0
@@ -171,6 +180,15 @@ class PathOptimizationTest:
             total_optimal_distance += dist
         rospy.loginfo(f"Optimal (shortest) path length: {total_optimal_distance:.2f} meters")
         return total_optimal_distance
+    """
+    
+    # Measuring tape distance between goals:
+    #goal 1 to 2 - 1.39m
+    #goal 2 to 3 - 1.52m
+    #goal 3 to 4 - 1.11m
+    #goal 4 to 1 - 2.66m 
+    #total length = 6.68m
+    #robot travel length = 8.74m | Time: 1 min recording
 
     # Refining the PARAMETERS ensures smaller deviations
     # goal_distance_bias (increase value for smoother trajectories and efficient movement in open spaces)

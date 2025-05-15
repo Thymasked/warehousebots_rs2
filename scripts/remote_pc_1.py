@@ -40,10 +40,10 @@ class MultiNavGoals:
         # Check the start pose of the turtlebot3 using 'rostopic echo /amcl_pose'
 
         self.goals = [
-            (0.10, -1.34, 0)]
+            (0.1, -1.34, 0)]
         
         self.goalReturn = [
-            (0.98, -2.67, 360) # Start Position
+            (1.13, -2.54, 360) # Start Position
         ]
 
 
