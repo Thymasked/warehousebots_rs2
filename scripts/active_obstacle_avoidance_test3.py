@@ -65,6 +65,9 @@ class ActiveObsAvoidance:
         # Subscribe to odometry topic
         rospy.Subscriber('/odom', Odometry, self.odomCallback)
 
+        # Start the time
+        self.start_time = rospy.get_time()
+
         # Loop through the list of goals
         for goal in self.goals:
             if not self.pubGoals(goal[0], goal[1], goal[2]):
@@ -78,6 +81,9 @@ class ActiveObsAvoidance:
         # Return to the original position
         if not self.pubGoals(self.goalReturn[0][0], self.goalReturn[0][1], self.goalReturn[0][2]):
             rospy.logwarn("Returning to start position failed.")
+
+        self.end_time = rospy.get_time()
+        self.total_time = self.end_time - self.start_time
 
         rospy.loginfo(f"Total Distance Traveled: {self.total_distance} meters")
         rospy.loginfo(f"Total Time Taken: {self.total_time} seconds")
@@ -118,7 +124,7 @@ class ActiveObsAvoidance:
         rospy.loginfo(f"Sending goal: x={x}, y={y}, θ={theta}°")
         
         # Record the time before sending goal
-        start_time = rospy.get_time()
+        #start_time = rospy.get_time()
         self.move_base.send_goal(goal)
 
         # Wait for result
@@ -129,11 +135,11 @@ class ActiveObsAvoidance:
             return False
 
         # Time to reach goal
-        end_time = rospy.get_time()
-        goal_time = end_time - start_time
+        #end_time = rospy.get_time()
+        #goal_time = end_time - start_time
 
         # Sum of time recorded for each goal
-        self.total_time += goal_time
+        #self.total_time += goal_time
 
         # Retry if goal failed
         retries = 2  # number of retries for a failed goal
