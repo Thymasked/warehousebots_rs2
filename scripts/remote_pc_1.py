@@ -43,7 +43,7 @@ class MultiNavGoals:
             (0.1, -1.34, 0)]
         
         self.goalReturn = [
-            (1.13, -2.54, 360) # Start Position
+            (0.98, -2.67, 360) # Start Position
         ]
 
 
