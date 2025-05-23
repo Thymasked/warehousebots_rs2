@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
-# Time Synchronisation: ssh ubuntu@192.168.0.210 "sudo date --set='$(date +"%Y-%m-%d %H:%M:%S")'"
+# Time Synchronisation: ssh ubuntu@192.168.0.205 "sudo date --set='$(date +"%Y-%m-%d %H:%M:%S")'"
+# sudo date -s "2025-05-06 15:08:50"
 
 # Coded by Daniel Nguyen - WarehouseBots - Robotic Studio 2
 # Multi-Robot Test for Robot 2
@@ -40,11 +41,10 @@ class MultiNavGoals:
         # Check the start pose of the turtlebot3 using 'rostopic echo /amcl_pose'
 
         self.goals = [
-            (2.2, -0.43, 360),
-            (2.3, 0.6, 270)]
+            (0.1, -1.34, 0)]
         
         self.goalReturn = [
-            (2.2, -0.4, 306) # Start Position
+            (-0.03, -0.03, 360) # Start Position
         ]
 
 
@@ -62,7 +62,7 @@ class MultiNavGoals:
 
         # Wait for 10 seconds for robot 1 to meet at center
         rospy.loginfo("Waiting for Robot 1 to meet at center...")
-        rospy.sleep(10)
+        #rospy.sleep(10)
 
         # Loop through the list of goals
         for goal in self.goals:
@@ -75,7 +75,7 @@ class MultiNavGoals:
         rospy.sleep(10)
 
         # Return to the original position
-        if not self.pubGoals(self.goalReturn[0], self.goalReturn[1], self.goalReturn[2]):
+        if not self.pubGoals(self.goalReturn[0][0], self.goalReturn[0][1], self.goalReturn[0][2]):
             rospy.logwarn("Returning to start position failed.")
 
         rospy.loginfo(f"Total Distance Traveled: {self.total_distance} meters")
@@ -135,7 +135,7 @@ class MultiNavGoals:
         self.total_time += goal_time
 
         # Retry if goal failed
-        retries = 3  # number of retries for a failed goal
+        retries = 2  # number of retries for a failed goal
 
         # Check if goal succeeded
         state = self.move_base.get_state()
